@@ -49,7 +49,7 @@ export function usePersonaManager() {
     // ペルソナオブジェクト自体にgreetingプロパティを追加することを検討
 
     // 現在は基本的なフォールバック挨拶を使用
-    return `こんにちは！${persona.name}です。\n今日はどんな話をしようか？`;
+    return `${persona.name}です。\n今日はどんな話をしようか？`;
   };
 
   return {
