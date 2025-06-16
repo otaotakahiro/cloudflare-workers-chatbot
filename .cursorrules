@@ -1,0 +1,271 @@
+# Cloudflare Workers Chatbot - Cursor Rules
+
+## 🚨 重要：開発時の必須ルール
+**AI アシスタントは開発・質問対応時に必ず以下の順序でドキュメントを参照すること:**
+
+1. **まず `.cursorrules`（このファイル）** - 開発ルールと最新技術情報
+2. **次に `README.md`** - 基本的な使用方法とセットアップ
+3. **必要に応じて `PROJECT_SPECIFICATION.md`** - 詳細な技術仕様
+
+## プロジェクト概要
+このプロジェクトは、Cloudflare Workers上で動作するダイナミック・ペルソナ型チャットボットエンジンです。
+OpenAI APIを活用し、外部から注入されるペルソナ設定に基づいて動的に応答を変更できる汎用チャットボットシステムです。
+
+## 🤖 最新技術スタック（2024年更新）
+
+### フロントエンド
+- **Vue 3** + TypeScript + Vite
+- **機能フラグシステム**: `src/Client/config/features.ts`で制御
+- **レスポンシブデザイン**: スマホ最適化対応
+
+### バックエンド
+- **Cloudflare Workers** + KV
+- **OpenAI API**: **GPT-4o-mini**（GPT-3.5-turboより70%コスト削減）
+- **コンテキスト**: 128Kトークン（約25万〜38万文字）
+
+### 開発ツール
+- **ESLint**, **Prettier**, **Stylelint**
+- **Wrangler CLI**: Cloudflareデプロイ
+- **Vite**: 高速開発環境
+
+## 📋 重要な開発コマンド
+
+```bash
+# フロントエンド開発
+npm run dev
+
+# Workerローカル開発（推奨）
+npx wrangler dev
+
+# 本番デプロイ
+npm run deploy
+
+# ログ監視
+npx wrangler tail
+
+# KVネームスペース作成
+npx wrangler kv:namespace create "CHAT_HISTORY"
+
+# シークレット設定
+npx wrangler secret put OPENAI_API_KEY
+```
+
+**注意**: `npm run dev:worker` は存在しません。`npx wrangler dev` を使用してください。
+
+## 🎛️ 機能フラグシステム
+
+### 機能の有効/無効制御
+`src/Client/config/features.ts` で各機能を制御：
+
+```typescript
+export const FEATURES = {
+  PERSONA_SWITCHING: false,    // ペルソナ変更機能（デフォルト：無効）
+  CONVERSATION_HISTORY: true,  // 会話履歴機能
+  DEBUG_MODE: false,           // デバッグモード
+} as const;
+```
+
+### 機能別ファイル
+- `src/Client/composables/usePersonaManager.ts` - ペルソナ管理
+- `src/Client/components/PersonaSelector.vue` - ペルソナ選択UI
+- `src/Client/data/personas.ts` - ペルソナデータ定義
+
+## 🔧 ペルソナ変更方法
+
+### 方法1: 既存ペルソナ編集
+`src/Client/data/personas.ts` のG-Dragonを編集
+
+### 方法2: 新ペルソナ追加
+1. `src/Client/data/personas.ts` の配列最初に追加
+2. `src/Worker/index.ts` の `getDefaultPersona()` 更新
+3. `src/Client/composables/usePersonaManager.ts` の挨拶メッセージ追加
+
+## 🚨 OpenAI API 重要設定
+
+### バージョン設定
+- **URL**: `https://api.openai.com/v1/chat/completions`
+- **バージョン指定**: URLパスの `/v1/` で十分
+- **ヘッダー**: `OpenAI-Version` は**使用禁止**（Azure専用）
+
+### モデル設定
+```typescript
+{
+  model: 'gpt-4o-mini',  // GPT-3.5-turboから変更済み
+  max_tokens: 500,
+  temperature: 0.8
+}
+```
+
+## コーディングルール
+
+### 言語・フレームワーク
+- 日本語でのコミュニケーションを基本とする
+- TypeScriptを使用し、型安全性を重視する
+- Vue 3のComposition APIを使用する
+- ESLint、Prettier、Stylelintの設定に従う
+
+### ファイル構造
+```
+src/
+├── Client/          # Vue.jsフロントエンド
+│   ├── config/      # 機能フラグ設定
+│   ├── data/        # ペルソナ定義
+│   └── composables/ # ビジネスロジック
+├── Worker/          # Cloudflare Workers
+├── Database/        # KVストレージ操作
+└── Shared/          # 共通型定義
+```
+
+### 命名規則
+- ファイル名: PascalCase (App.vue, index.ts)
+- 変数・関数: camelCase
+- 定数: UPPER_SNAKE_CASE
+- CSS クラス: camelCase
+- インターフェース: PascalCase
+
+### TypeScript
+- 明示的な型定義を必須とする
+- `any`型の使用を禁止
+- 関数の戻り値型を明示する
+- 未使用変数・パラメータは`_`プレフィックスを付ける
+
+### Vue.js
+- Composition APIを使用
+- `<script setup>`構文を採用
+- プロップスと型定義を明確にする
+- リアクティブ変数は`ref`または`reactive`を使用
+
+### Cloudflare Workers
+- 環境変数は`Env`インターフェースで型定義
+- エラーハンドリングを適切に実装
+- CORS設定を含める
+- KVの操作は非同期で実装
+
+## 🔐 セキュリティ・環境設定
+
+### 環境変数
+```bash
+# .env ファイル（ローカル開発）
+OPENAI_API_KEY=your_api_key_here
+
+# Cloudflareシークレット（本番）
+npx wrangler secret put OPENAI_API_KEY
+```
+
+### 設定ファイル
+- `.env` - ローカル開発用（git管理対象外）
+- `wrangler.jsonc` - Cloudflare設定
+- KVバインディング名: `CHAT_HISTORY`
+
+## 🚀 デプロイメント
+
+### 環境構成
+| 環境 | ブランチ | ドメイン | 用途 |
+|------|----------|----------|------|
+| 本番 | `main` | `cloudflare-workers-chatbot.ten-ai.workers.dev` | 本番運用 |
+| 開発 | `develop` | ローカル | 検証環境 |
+
+### デプロイ手順
+1. KVネームスペース作成
+2. OpenAI APIキーをシークレット設定
+3. `npm run deploy` でデプロイ
+
+## 🔍 トラブルシューティング
+
+### よくある問題
+1. **OpenAI APIエラー**: APIキー設定を確認
+2. **KVエラー**: ネームスペース作成を確認
+3. **`dev:worker` エラー**: `npx wrangler dev` を使用
+
+### ログ確認
+```bash
+# リアルタイムログ
+npx wrangler tail
+
+# 特定時間範囲
+npx wrangler tail --since 1h
+```
+
+## 開発フロー
+
+### ブランチ戦略
+- `main`: 本番環境
+- `develop`: 開発環境
+- `feature/*`: 機能開発
+- `fix/*`: バグ修正
+
+### コミット
+- 1機能1コミット
+- コミットメッセージは日本語で明確に
+- 破壊的変更は明示する
+
+### プルリクエスト
+- 説明文を日本語で記載
+- UI変更時はスクリーンショットを添付
+- レビューを必須とする
+
+## AI アシスタント活用ルール
+
+### Cursor AI の使用方針
+- **必須**: 開発時は必ずこのルールファイルを最初に参照
+- コード生成・修正時は必ず内容を確認
+- 生成されたコードの品質チェックを実施
+- AIの提案内容をPR・コミットメッセージで明示
+- 複雑なロジックは人間がレビュー
+
+### 禁止事項
+- AIが生成したコードをそのまま本番投入
+- セキュリティ関連コードの無検証採用
+- 型定義の曖昧な実装
+- ドキュメント参照せずに質問回答
+
+## 特別な考慮事項
+
+### ペルソナシステム
+- 動的ペルソナ変更に対応
+- システムプロンプトの適切な構築
+- キャラクター設定の一貫性維持
+- デフォルト：G-Dragon（固定モード）
+
+### パフォーマンス最適化
+- GPT-4o-mini による応答速度向上
+- 128Kコンテキストで長い会話対応
+- Cloudflare Workers の制限考慮
+
+### スケーラビリティ
+- 機能フラグによるモジュラー設計
+- KVの読み書き最適化
+- レスポンス時間の監視
+
+## 品質保証
+
+### テスト
+- 単体テストの実装を推奨
+- E2Eテストでユーザーフローを検証
+- APIエンドポイントのテスト
+
+### 監視
+- エラーログの適切な出力
+- パフォーマンス指標の監視
+- ユーザー体験の継続的改善
+
+## 📚 ドキュメント階層
+
+### 役割分担
+1. **`.cursorrules`**: 開発ルール・最新技術情報
+2. **`README.md`**: 使用方法・セットアップ手順
+3. **`PROJECT_SPECIFICATION.md`**: 詳細技術仕様
+
+### 必須ドキュメント
+- API仕様書の維持
+- セットアップ手順の更新
+- アーキテクチャ図の作成
+
+### コメント
+- 複雑なロジックには日本語コメント
+- 外部API連携部分の詳細説明
+- 設定値の意味を明記
+
+## 🔄 継続的改善
+
+このルールファイルは開発の進行に応じて継続的に更新し、最新の技術情報と開発手順を反映させます。

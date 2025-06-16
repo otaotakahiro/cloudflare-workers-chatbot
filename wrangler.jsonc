@@ -1,0 +1,54 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "account_id": "f936ae74ccb3e57720edbdd06d1f0f13",
+  "name": "cloudflare-workers-chatbot",
+  "compatibility_date": "2025-04-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./src/Worker/index.ts",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+  },
+  "observability": {
+    "enabled": true,
+  },
+  "vars": {
+    "mode": "production",
+  },
+  "kv_namespaces": [
+    {
+      "binding": "CHAT_HISTORY",
+      "id": "6024c633f4834afcb726c7f9d598d566"
+    }
+  ],
+  "env": {
+    "develop": {
+      "vars": {
+        "mode": "develop",
+      },
+      "kv_namespaces": [
+        {
+          "binding": "CHAT_HISTORY",
+          "preview_id": "local-kv",
+          "id": "6024c633f4834afcb726c7f9d598d566"
+        }
+      ]
+    },
+    "local": {
+      "vars": {
+        "mode": "local",
+      },
+      "kv_namespaces": [
+        {
+          "binding": "CHAT_HISTORY",
+          "preview_id": "local-kv",
+          "id": "local-kv"
+        }
+      ]
+    }
+  }
+}

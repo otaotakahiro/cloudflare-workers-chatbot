@@ -1,0 +1,12 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="defaultGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ddd;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#999;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#defaultGradient)"/>
+  <!-- Default person icon -->
+  <circle cx="50" cy="35" r="12" fill="white"/>
+  <path d="M 30 75 Q 30 65 40 65 L 60 65 Q 70 65 70 75 L 70 85 L 30 85 Z" fill="white"/>
+</svg>
