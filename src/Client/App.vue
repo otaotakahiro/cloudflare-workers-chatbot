@@ -91,13 +91,23 @@ const handlePersonaChange = (persona: any): void => {
   const oldPersona = currentPersona.value;
   changePersona(persona);
 
-  // ペルソナ変更をチャットに通知（機能が有効な場合のみ）
+  // ペルソナ変更時は会話をリセットして、新しい挨拶のみを表示
   if (isPersonaSwitchingEnabled.value) {
+    // 会話履歴をクリア
+    messages.value = [];
+
+    // 新しいセッションIDを生成（履歴を完全に分離）
+    sessionId.value = crypto.randomUUID();
+
+    // 新しいペルソナの挨拶のみを表示
     messages.value.push({
       role: 'assistant',
-      content: `${oldPersona.name}から${persona.name}に変更しました。${getPersonaGreeting(persona)}`
+      content: getPersonaGreeting(persona)
     });
     scrollToBottom();
+
+    // モーダルを閉じる
+    closePersonaSelector();
   }
 };
 
