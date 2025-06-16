@@ -41,6 +41,7 @@ wrangler.toml.bak
 .Trashes
 ehthumbs.db
 Thumbs.db
+**/.DS_Store
 
 # Logs
 logs/
@@ -94,3 +95,6 @@ temp/
 
 # Prisma
 prisma/migrations/dev.db*
+
+# Tests (optional - remove if you want to track test files)
+# tests/
