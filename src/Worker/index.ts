@@ -2,6 +2,8 @@
 
 import type { ChatMessage, ChatRequest, ChatResponse, Persona } from '../Shared/types';
 import { ChatHistoryManager, type KVStorage } from '../Database';
+import { PERSONA_TEMPLATES } from './personas';
+import { BotConfigurationManager } from './botConfig';
 
 interface Env {
   OPENAI_API_KEY: string;
@@ -14,35 +16,63 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
-const generateSystemPrompt = (persona: Persona): string => {
-  return `あなたは${persona.name}として振る舞ってください。
+// BotConfigurationManagerのインスタンスを作成
+const botConfigManager = new BotConfigurationManager();
 
-キャラクター設定:
-- 名前: ${persona.name}
-- 役割: ${persona.role}
-- 話し方・トーン: ${persona.tone}
-- 説明: ${persona.description}
+function createSystemPrompt(persona: string): string {
+  console.log(`Creating system prompt for persona: ${persona}`);
 
-重要な指示:
-1. 常に${persona.name}として一貫した性格で応答してください
-2. ${persona.tone}の話し方を維持してください
-3. ${persona.role}に関連する知識や経験を活かした回答をしてください
-4. 日本語で自然な会話を心がけてください
-5. ユーザーとの親しみやすい関係を築いてください
+  // チャット実行時の現在時刻を取得（日本時間）
+  const chatCurrentDate = new Date();
+  const jstOffset = 9 * 60; // 9時間 = 540分
+  const utc = chatCurrentDate.getTime() + (chatCurrentDate.getTimezoneOffset() * 60000);
+  const chatTimeJST = new Date(utc + (jstOffset * 60000));
 
-${persona.name}として、ユーザーとの会話を楽しんでください。`;
+  // ペルソナテンプレートから設定を取得してシステムプロンプト生成
+  try {
+    return botConfigManager.generateSystemPrompt(persona, chatTimeJST);
+  } catch (error) {
+    // フォールバック：G-Dragonを使用
+    console.log(`Persona ${persona} not found, falling back to g-dragon:`, error);
+    try {
+      return botConfigManager.generateSystemPrompt('g-dragon', chatTimeJST);
+    } catch (fallbackError) {
+      console.error('Failed to generate system prompt for g-dragon:', fallbackError);
+      // 最終フォールバック：基本的なプロンプト
+      return 'あなたは親切で知識豊富なAIアシスタントです。丁寧で分かりやすい日本語で回答してください。';
+    }
+  }
+}
+
+const getDefaultPersona = (): Persona => {
+  // 実際のペルソナテンプレートからG-Dragonの情報を取得
+  const gDragonTemplate = PERSONA_TEMPLATES['g-dragon'];
+
+  if (gDragonTemplate) {
+    return {
+      id: 'g-dragon',
+      name: `${gDragonTemplate.basicInfo.name} (${gDragonTemplate.basicInfo.realName?.replace(/（.*）/, '') || gDragonTemplate.basicInfo.name})`,
+      role: gDragonTemplate.basicInfo.occupation.join('、'),
+      tone: gDragonTemplate.personality.coreTraits.join('、'),
+      description: `${gDragonTemplate.basicInfo.birthDate}生まれ、${gDragonTemplate.basicInfo.origin}出身。${gDragonTemplate.basicInfo.group}として活動。${gDragonTemplate.basicInfo.mbti ? `MBTI：${gDragonTemplate.basicInfo.mbti}` : ''}`,
+      avatar: '/g-dragon.png',
+      backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      textColor: '#ffffff'
+    };
+  }
+
+  // フォールバック（ペルソナテンプレートが見つからない場合）
+  return {
+    id: 'g-dragon',
+    name: 'G-Dragon',
+    role: 'アーティスト',
+    tone: '親しみやすい',
+    description: 'K-POPアーティスト',
+    avatar: '/g-dragon.png',
+    backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    textColor: '#ffffff'
+  };
 };
-
-const getDefaultPersona = (): Persona => ({
-  id: 'nct-mark',
-  name: 'Mark (NCT)',
-  role: 'K-POPアイドル、ラッパー、ボーカル、ダンサー',
-  tone: 'ポジティブで努力家、親しみやすく謙虚',
-  description: 'NCT U・NCT 127・NCT DREAMの3つのユニットで活動するオールラウンダー。1999年8月2日カナダ生まれ、7歳でニューヨーク、12歳でバンクーバーに移住後、練習生として韓国へ。MBTI：INFJ（提唱者型）。メンバーから「可愛い」「天使」と溺愛される愛されキャラ。努力の塊で自己改善意識が高く、ラップ・歌・ダンス・作詞すべてをこなす。「大丈夫です！」が口癖でネガティブな言葉は言わない。時々寝言でラップする。英語と韓国語のバイリンガル。',
-  avatar: '/nct-mark.png',
-  backgroundColor: 'linear-gradient(135deg, #88e5a3 0%, #5f9ea0 100%)',
-  textColor: '#ffffff'
-});
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -90,13 +120,14 @@ export default {
         const userMessage: ChatMessage = { role: 'user', content: message };
         await historyManager.addMessage(sessionId, userMessage);
 
-        // OpenAI API に送信するメッセージを構築
+        // 新しいBotConfigurationManagerを使用してシステムプロンプトを生成
+        const systemPrompt = createSystemPrompt(currentPersona.id);
         const systemMessage: ChatMessage = {
-          role: 'system', // systemロールを正しく使用
-          content: generateSystemPrompt(currentPersona)
+          role: 'system',
+          content: systemPrompt
         };
 
-        const recentMessages = await historyManager.getRecentMessages(sessionId, 10);
+        const recentMessages = await historyManager.getRecentMessages(sessionId, 30);
         const messages: ChatMessage[] = [systemMessage, ...recentMessages];
 
         console.log('Sending to OpenAI:', {
@@ -168,9 +199,9 @@ export default {
 
         // フォールバック応答
         const fallbackResponses = [
-          'すみません、今ちょっと調子が悪いみたいです。もう一度試してもらえますか？',
-          'エラーが発生しました。少し時間をおいてから再度お試しください。',
-          '申し訳ありません。システムに問題が発生しているようです。',
+          'すみません、今ちょっと調子が悪いみたいです。\nもう一度試してもらえますか？',
+          'エラーが発生しました。\n少し時間をおいてから再度お試しください。',
+          '申し訳ありません。\nシステムに問題が発生しているようです。',
         ];
 
         const fallbackResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];

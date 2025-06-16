@@ -31,12 +31,10 @@ export const FEATURES = {
  * 空の配列の場合は全てのペルソナが表示されます
  */
 export const AVAILABLE_PERSONA_IDS: string[] = [
-  'nct-mark',
-  'enhypen-sunghoon',
-  'kenmochi-touya',
-  'g-dragon'
-  // 必要に応じてペルソナIDを追加/削除してください
-  // 例: 'ai-assistant', 'cat-girl', 'business-consultant', 'chef', 'teacher'
+  'g-dragon',
+  'tajima-shogo'
+  // 他のペルソナを有効にする場合は以下を追加:
+  // 'nct-mark', 'enhypen-sunghoon', 'kenmochi-touya', 'ai-assistant', 'cat-girl', 'business-consultant', 'chef', 'teacher'
 ];
 
 /**

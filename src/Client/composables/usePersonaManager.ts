@@ -44,19 +44,12 @@ export function usePersonaManager() {
   };
 
   const getPersonaGreeting = (persona: Persona): string => {
-    const greetings: Record<string, string> = {
-      'nct-mark': 'Yo! Mark from NCT here! What\'s up? 何か話したいことある？',
-      'enhypen-sunghoon': 'こんにちは、ENHYPENのソンフンです。今日も素敵な一日にしましょう。',
-      'kenmochi-touya': 'ういっす〜！剣持刀也や！今日はなんの話するんや？',
-      'g-dragon': 'よう！G-Dragonだ。何か話したいことはあるか？',
-      'ai-assistant': 'こんにちは！AIアシスタントです。何かお手伝いできることはありますか？',
-      'cat-girl': 'にゃーん♪ ねこちゃんだにゃん！一緒に遊ぼうにゃ〜',
-      'business-consultant': 'お疲れ様です。ビジネスコンサルタントです。どのようなご相談でしょうか？',
-      'chef': 'ボンジュール！シェフです。美味しい料理について話しましょう！',
-      'teacher': 'こんにちは！先生です。今日は何を学びたいですか？'
-    };
+    // 実際のペルソナテンプレートから挨拶を取得する
+    // TODO: 将来的にはAPIエンドポイントから取得するか、
+    // ペルソナオブジェクト自体にgreetingプロパティを追加することを検討
 
-    return greetings[persona.id] || `${persona.name}です。よろしくお願いします！`;
+    // 現在は基本的なフォールバック挨拶を使用
+    return `こんにちは！${persona.name}です。\n今日はどんな話をしようか？`;
   };
 
   return {
