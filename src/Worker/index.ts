@@ -144,9 +144,9 @@ export default {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4.1-mini',
+            model: 'gpt-4.1-mini', // LLMモデルを切り替える
             messages: messages,
-            max_tokens: 500,
+            max_tokens: 10000,  // 500から10000に増加：システムプロンプト7,140トークン + 応答用余裕を確保
             temperature: 0.8,
           }),
         });
