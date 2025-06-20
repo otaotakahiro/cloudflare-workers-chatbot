@@ -144,7 +144,7 @@ export default {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: 'gpt-4.1-mini',
             messages: messages,
             max_tokens: 500,
             temperature: 0.8,
